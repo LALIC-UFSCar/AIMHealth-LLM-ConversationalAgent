@@ -1,5 +1,9 @@
 # PersonaRAG (Reproducible)
 
+![personaragfinal (1)](https://github.com/user-attachments/assets/c524e2e4-080f-4fcc-8314-3ed8cec04231)
+
+
+
 This repository contains:
 - Inference pipelines: baseline, RAG, and Phase3 (persona-aware RAG).
 - LLM-as-judge evaluation code.
