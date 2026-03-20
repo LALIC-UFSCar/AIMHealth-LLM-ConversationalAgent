@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Local outputs
+outputs/
+checkpoints/
+logs/
+*.log
+
+# Binary datasets and spreadsheets
+*.xlsx
+*.xls
+*.xlsm
+
+# Jupyter artifacts
+.ipynb_checkpoints/
+
+# OS/editor
+.DS_Store
+.vscode/
