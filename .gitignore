@@ -18,7 +18,6 @@ logs/
 *.log
 
 # Binary datasets and spreadsheets
-*.xlsx
 *.xls
 *.xlsm
 
