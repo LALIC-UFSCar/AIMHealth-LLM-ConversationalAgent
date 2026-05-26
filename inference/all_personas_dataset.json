@@ -1,0 +1,323 @@
+{
+  "metadata": {
+    "description": "All personas used in Dataset_Completo_Com_Personas_with_new_personas.xlsx",
+    "created_at": "2026-01-29",
+    "total_personas": 6,
+    "existing_personas": ["Angela", "Beatriz", "Cauê"],
+    "new_personas": ["user51", "user228", "user1309"],
+    "sources": {
+      "existing": "AMIVE Project - Personas do Amive.docx",
+      "new": "PersonaLens Benchmark"
+    }
+  },
+  "personas": {
+    "existing": [
+      {
+        "id": "Angela",
+        "source": "AMIVE",
+        "demographics": {
+          "name": "Angela",
+          "age": 24,
+          "gender": "Female",
+          "race": "Black",
+          "education": "Civil Engineering - First year",
+          "housing": "University dormitory",
+          "income": "1.5 minimum wages"
+        },
+        "profile": {
+          "motivations": "Get a good job, help family after graduation",
+          "clinical_profile": "Anxiety, panic attacks, difficulty meeting deadlines and socializing",
+          "pains": "Anxiety, panic attacks leading to difficulty meeting deadlines and socializing",
+          "therapy_status": "Was referred but did not follow through",
+          "hobbies": ["Playing basketball on campus", "Online games"],
+          "social_media": ["WhatsApp", "Twitter"],
+          "phone": "Android",
+          "interaction_profile": "Daily"
+        },
+        "keywords": [
+          "anxiety", "anxious", "panic", "attack", "heart racing", "nervous",
+          "worried", "stress", "deadline", "pressure", "overwhelmed", "scared",
+          "fear", "breathe", "breathing", "chest", "cant focus", "concentration",
+          "social", "people", "crowd"
+        ]
+      },
+      {
+        "id": "Beatriz",
+        "source": "AMIVE",
+        "demographics": {
+          "name": "Beatriz",
+          "age": 24,
+          "gender": "Female",
+          "race": "White",
+          "education": "Nursing - Master's degree, Second year",
+          "housing": "Lives with children, has a sick family member (father)",
+          "income": "5 minimum wages"
+        },
+        "profile": {
+          "motivations": "Improve her pain privately, no time for conventional therapy",
+          "clinical_profile": "Hopelessness, guilt, low self-esteem, depressive mood, worry and anxiety, stress",
+          "pains": "Caring for sick family member, family pressures, master's degree pressures, grieving mother's death, worry about appearing strong for family, exhausting work routine",
+          "therapy_status": "Psychotherapy, psychosocial assistance and support groups",
+          "hobbies": ["Travel with family", "Outings with children", "Concerts with husband", "Visiting restaurants"],
+          "social_media": ["WhatsApp", "Facebook", "Instagram"],
+          "phone": "iPhone",
+          "interaction_profile": "Daily"
+        },
+        "keywords": [
+          "depression", "depressed", "sad", "sadness", "hopeless", "hopelessness",
+          "worthless", "guilt", "guilty", "crying", "cry", "tears", "empty", "numb",
+          "tired", "exhausted", "no energy", "cant sleep", "insomnia", "death",
+          "dying", "grief", "loss", "lost", "alone", "lonely", "burden", "failed",
+          "failure", "hate myself", "self-esteem", "meaningless", "pointless", "give up"
+        ]
+      },
+      {
+        "id": "Cauê",
+        "source": "AMIVE",
+        "demographics": {
+          "name": "Cauê",
+          "age": 22,
+          "gender": "Non-binary",
+          "race": "Mixed/Pardo",
+          "education": "Psychology - Senior",
+          "housing": "Shares apartment with colleagues",
+          "income": "Up to 1 minimum wage"
+        },
+        "profile": {
+          "motivations": "Find emotional support and relief",
+          "clinical_profile": "End-of-semester anxiety, concerns about professional future and job market",
+          "pains": "Finding work, suffering racial and gender prejudice",
+          "therapy_status": "Yes, at volunteer clinics",
+          "hobbies": ["Ayahuasca tea ceremonies", "Reading", "Parties", "Social events"],
+          "social_media": ["WhatsApp", "Twitter", "Instagram"],
+          "phone": "Android",
+          "interaction_profile": "Sporadic throughout the day"
+        },
+        "keywords": [
+          "identity", "gender", "trans", "non-binary", "discrimination", "prejudice",
+          "racism", "racist", "excluded", "different", "belong", "belonging",
+          "accepted", "acceptance", "future", "career", "job", "work", "uncertain",
+          "confused", "understand", "support", "help", "therapy", "therapist",
+          "counseling", "talking", "feeling", "emotions", "emotional"
+        ]
+      }
+    ],
+    "new": [
+      {
+        "id": "user51",
+        "source": "PersonaLens",
+        "demographics": {
+          "user_id": "user51",
+          "age": "35-44 years old",
+          "gender": "Female",
+          "employment_status": "Working full-time",
+          "education": "University Bachelors Degree",
+          "marital_status": "Never been married",
+          "english_proficiency": "Native speaker",
+          "ethnicity": "White",
+          "religion": "Christian",
+          "birth_country": "Ireland",
+          "reside_country": "Ireland"
+        },
+        "interests": {
+          "active": ["Alarm", "Books", "Calendar", "Events", "Finance", "Hotels", "Media", "Messaging", "Movies", "Music", "Restaurants", "Services", "Shopping", "Train", "Travel"],
+          "inactive": ["Buses", "Flights", "Games", "Rental Cars", "Sports"]
+        },
+        "affinities": {
+          "Books": {
+            "Genre": ["fiction", "biography", "history"],
+            "Favourite Authors": ["Colm Tóibín", "Tana French", "Sebastian Barry"],
+            "Favourite Books": ["Brooklyn", "The Secret Scripture", "The Gathering"],
+            "Reading Format": ["physical", "ebook"],
+            "Reading Frequency": "weekly"
+          },
+          "Music": {
+            "Preferred Genres": ["folk", "acoustic", "jazz"],
+            "Favorite Artists": ["Joni Mitchell", "Norah Jones", "Diana Krall"],
+            "Platform Preference": ["Spotify", "Apple Music"]
+          },
+          "Movies": {
+            "Preferred Genres": ["drama", "romance", "historical fiction", "independent"],
+            "Favorite Actors and Directors": ["Saoirse Ronan", "Liam Neeson", "Cillian Murphy", "Jim Sheridan", "Neil Jordan"]
+          },
+          "Media": {
+            "Preferred Genres": ["drama", "historical fiction", "period drama", "biography"],
+            "Viewing Platform Preference": ["Netflix", "Amazon Prime", "BBC iPlayer"]
+          },
+          "Travel": {
+            "Preferred Destination Types": ["cultural", "historical", "city", "rural"],
+            "Frequent Travel Destination": ["Italy", "France", "Spain"],
+            "Travel Season Preference": ["Spring", "Fall"]
+          },
+          "Restaurants": {
+            "Cuisine Preference": ["Mediterranean", "French", "Italian"],
+            "Dietary Restrictions": ["vegetarian"],
+            "Price Range": ["moderate", "upscale"]
+          },
+          "Events": {
+            "Event Type Preference": ["concerts", "theater", "art exhibitions", "cultural celebrations", "lectures"],
+            "Price Range": ["under $50", "$50-$100"]
+          },
+          "Messaging": {
+            "Preferred Messaging Apps": ["WhatsApp", "iMessage", "Facebook Messenger"],
+            "Communication Style": "text",
+            "Preferred Communication Style": "friendly"
+          }
+        },
+        "personality_summary": "A 35-44 year old Irish professional woman with a university degree. She is culturally engaged, enjoys Irish literature, folk music, and period dramas. She values travel to European destinations rich in history and culture, prefers vegetarian cuisine, and maintains an active social life through messaging apps. She is a practicing Christian with refined tastes in entertainment and dining."
+      },
+      {
+        "id": "user228",
+        "source": "PersonaLens",
+        "demographics": {
+          "user_id": "user228",
+          "age": "18-24 years old",
+          "gender": "Female",
+          "employment_status": "Student",
+          "education": "Completed Secondary School",
+          "marital_status": "Never been married",
+          "english_proficiency": "Advanced",
+          "ethnicity": "White",
+          "religion": "Muslim",
+          "birth_country": "Austria",
+          "reside_country": "Austria"
+        },
+        "interests": {
+          "active": ["Alarm", "Books", "Calendar", "Events", "Games", "Media", "Messaging", "Movies", "Music", "Restaurants", "Shopping", "Sports", "Travel"],
+          "inactive": ["Buses", "Finance", "Flights", "Hotels", "Rental Cars", "Services", "Train"]
+        },
+        "affinities": {
+          "Books": {
+            "Genre": ["fantasy", "young adult", "fiction"],
+            "Favourite Authors": ["J.K. Rowling", "Khaled Hosseini"],
+            "Favourite Books": ["Harry Potter and the Prisoner of Azkaban", "The Kite Runner"],
+            "Reading Format": ["physical", "ebook"],
+            "Reading Frequency": "weekly"
+          },
+          "Music": {
+            "Preferred Genres": ["world", "electronic", "pop"],
+            "Favorite Artists": ["Dua Lipa", "Rosalía", "Sami Yusuf"],
+            "Favorite Bands": ["Mashrou' Leila", "Tinariwen"],
+            "Platform Preference": ["Spotify", "YouTube Music"]
+          },
+          "Movies": {
+            "Preferred Genres": ["drama", "romance", "foreign film"],
+            "Favorite Actors and Directors": ["Fatih Akin", "Sibel Kekilli", "Nuri Bilge Ceylan"]
+          },
+          "Media": {
+            "Preferred Genres": ["drama", "romance", "historical", "period drama"],
+            "Favourite Actors and Directors": ["Asghar Farhadi", "Marjane Satrapi", "Shohreh Aghdashloo"],
+            "Favourite Media": ["Persepolis", "A Separation", "The Past"],
+            "Viewing Platform Preference": ["Netflix", "Amazon Prime", "Kanopy"]
+          },
+          "Travel": {
+            "Preferred Destination Types": ["cultural", "historical", "city", "island"],
+            "Frequent Travel Destination": ["Turkey", "Morocco"],
+            "Travel Season Preference": ["Summer", "Fall"]
+          },
+          "Restaurants": {
+            "Cuisine Preference": ["Turkish", "Mediterranean", "Lebanese"],
+            "Dietary Restrictions": ["halal"],
+            "Price Range": ["budget-friendly", "moderate"]
+          },
+          "Events": {
+            "Event Type Preference": ["concerts", "festivals", "cultural celebrations", "workshops"],
+            "Price Range": ["under $50"]
+          },
+          "Shopping": {
+            "Preferred Product Category": ["clothing", "beauty", "fashion accessories"],
+            "Brand Preference": ["Modest fashion brands", "Halal cosmetics brands"]
+          },
+          "Games": {
+            "Preferred Game Genres": ["adventure", "puzzle", "simulation", "educational"],
+            "Gaming Platforms": ["PC", "mobile"],
+            "Preferred Game Name": ["Cities: Skylines", "Monument Valley", "The Room"]
+          },
+          "Calendar": {
+            "Event Type Preference": ["study sessions", "social gatherings", "religious events"]
+          },
+          "Messaging": {
+            "Preferred Messaging Apps": ["WhatsApp", "Telegram", "SMS"],
+            "Communication Style": "text",
+            "Preferred Communication Style": "friendly"
+          }
+        },
+        "personality_summary": "A young Muslim female student (18-24) living in Austria. She balances her academic life with her cultural and religious identity. She enjoys fantasy literature (especially Harry Potter), world music that blends different cultures, and films from Middle Eastern directors. She values halal dining options, modest fashion, and maintains close connections with family and friends. She is curious about different cultures while staying true to her Muslim values."
+      },
+      {
+        "id": "user1309",
+        "source": "PersonaLens",
+        "demographics": {
+          "user_id": "user1309",
+          "age": "35-44 years old",
+          "gender": "Female",
+          "employment_status": "Working full-time",
+          "education": "University Bachelors Degree",
+          "marital_status": "Never been married",
+          "english_proficiency": "Native speaker",
+          "ethnicity": "Asian",
+          "religion": "Non-religious",
+          "birth_country": "United Kingdom",
+          "reside_country": "United Kingdom"
+        },
+        "interests": {
+          "active": ["Alarm", "Books", "Calendar", "Events", "Finance", "Flights", "Hotels", "Media", "Messaging", "Movies", "Music", "Rental Cars", "Restaurants", "Services", "Shopping", "Train", "Travel"],
+          "inactive": ["Buses", "Games", "Sports"]
+        },
+        "affinities": {
+          "Books": {
+            "Genre": ["fiction", "thriller", "non-fiction"],
+            "Favourite Authors": ["Kazuo Ishiguro", "Chimamanda Ngozi Adichie", "Jhumpa Lahiri"],
+            "Favourite Books": ["Remains of the Day", "Americanah", "The Namesake"],
+            "Favourite Book Series": ["The Neapolitan Novels by Elena Ferrante"],
+            "Reading Format": ["physical", "ebook"],
+            "Reading Frequency": "weekly"
+          },
+          "Music": {
+            "Preferred Genres": ["pop", "R&B", "electronic"],
+            "Favorite Artists": ["Dua Lipa", "Rihanna", "Calvin Harris"],
+            "Favorite Bands": ["Coldplay", "Maroon 5"],
+            "Platform Preference": ["Spotify", "Apple Music"]
+          },
+          "Movies": {
+            "Preferred Genres": ["drama", "historical fiction", "independent", "foreign film"],
+            "Favorite Actors and Directors": ["Tilda Swinton", "Hirokazu Kore-eda", "Cate Blanchett", "Bong Joon-ho"]
+          },
+          "Media": {
+            "Preferred Genres": ["drama", "independent", "foreign film", "historical fiction"],
+            "Favourite Media": ["Parasite", "The Handmaiden", "The Lives of Others", "Portrait of a Lady on Fire"],
+            "Viewing Platform Preference": ["Netflix", "Kanopy", "BBC iPlayer", "Amazon Prime"]
+          },
+          "Travel": {
+            "Preferred Destination Types": ["cultural", "historical", "city", "photography"],
+            "Frequent Travel Destination": ["Paris", "Rome", "Barcelona"],
+            "Travel Season Preference": ["Spring", "Fall"]
+          },
+          "Restaurants": {
+            "Cuisine Preference": ["Indian", "Thai", "Japanese"],
+            "Dietary Restrictions": ["vegetarian", "nut allergy"],
+            "Price Range": ["moderate", "upscale"]
+          },
+          "Events": {
+            "Event Type Preference": ["art exhibitions", "cultural celebrations", "author talks", "lectures"],
+            "Price Range": ["under $50", "$50-$100"]
+          },
+          "Finance": {
+            "Preferred Sectors": ["technology", "healthcare", "consumer goods"],
+            "Financial Company": ["Apple Inc.", "Amazon.com Inc.", "Microsoft Corporation", "NVIDIA Corporation"]
+          },
+          "Shopping": {
+            "Preferred Product Category": ["clothing", "beauty", "home goods", "fashion accessories", "jewelry"],
+            "Brand Preference": ["Zara", "H&M", "Sephora", "Pottery Barn", "West Elm"]
+          },
+          "Messaging": {
+            "Preferred Messaging Apps": ["WhatsApp", "Telegram", "Slack"],
+            "Communication Style": "text",
+            "Preferred Communication Style": "professional"
+          }
+        },
+        "personality_summary": "A 35-44 year old British Asian professional woman with refined cultural tastes. She appreciates international cinema (especially Korean and Japanese directors), diverse literature exploring themes of identity and belonging, and enjoys traveling to European cultural capitals for photography. She is vegetarian with a nut allergy, follows technology stocks, and values both professional communication and artistic experiences. She is non-religious and enjoys independent, thought-provoking content."
+      }
+    ]
+  }
+}

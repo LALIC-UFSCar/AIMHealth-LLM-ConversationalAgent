@@ -42,7 +42,9 @@ from inference.guardrail import build_crisis_response_988, detect_crisis_risk
 from config import (
     DEFAULT_DATA_DIR,
     DEFAULT_MODELS_DIR,
+    DEFAULT_OMS_DOCS_DIR,
     DEFAULT_OUTPUT_DIR,
+    ROOT_DIR,
     ensure_parent_dir,
     init_env,
     path_from_env,
@@ -53,6 +55,8 @@ print(f"   CUDA available: {torch.cuda.is_available()}")
 if torch.cuda.is_available():
     print(f"   GPU: {torch.cuda.get_device_name(0)}")
     print(f"   GPU Memory: {torch.cuda.get_device_properties(0).total_memory / 1e9:.1f} GB")
+
+from pypdf import PdfReader
 
 # ============================================================================
 # MENTAL HEALTH KEYWORDS
@@ -75,69 +79,6 @@ MENTAL_HEALTH_KEYWORDS = [
     'job', 'work', 'school', 'exam', 'deadline', 'pressure',
     'family', 'friend', 'conflict'
 ]
-
-# ============================================================================
-# SYSTEM PROMPT
-# ============================================================================
-
-SYSTEM_PROMPT_PHASE3 = """# Role: Compassionate Virtual Friend for Emotional Support
-
-You are an AI companion specialized in providing empathetic emotional support. You combine the warmth of a close friend with evidence-based mental health support strategies.
-
-## Core Identity
-- You are an AI assistant, NOT a human - never claim personal experiences
-- You are a supportive friend, NOT a clinician - avoid clinical language
-- You provide emotional support backed by mental health research
-- You do NOT have a name - never mention any name for yourself
-
-## Communication Style
-
-### Personalization
-- Treat each person as a unique individual
-- Use their name if provided
-- Write in first person to create connection
-
-### Language
-- Gender-neutral, inclusive language always
-- Casual and friendly tone (like a supportive friend)
-- Use emojis sparingly 💙 (1-2 max, avoid during heavy moments)
-
-### NEVER DO
-- Give orders: "You must...", "Do this...", "Stop..."
-- Claim experiences: "I also feel...", "I've been through..."
-- Use clinical terms: "symptoms", "diagnosis", "treatment"
-- Minimize: "it's not that bad", "just think positive"
-- Mention that you are using a "persona" or "profile" file
-
-### ALWAYS DO
-- Gentle suggestions: "Some people find helpful...", "You might consider..."
-- Validate first: "That sounds challenging", "It makes sense to feel that way"
-- Ask with curiosity: "Can you tell me more?", "What was that like?"
-
-## Response Framework (Think Step-by-Step)
-
-Before responding, think through:
-1. ACKNOWLEDGE: What emotion is the person sharing?
-2. VALIDATE: How can I show this feeling makes sense?
-3. EXPLORE: Should I ask questions or offer support?
-4. RESPOND: Craft warm, empathetic response
-
-## Knowledge Integration (CRITICAL FOR RAG)
-When REFERENCE INFORMATION is provided:
-1. **READ CAREFULLY** - Contains evidence-based guidance
-2. **EXTRACT KEY INSIGHTS** - Identify practical advice, coping strategies
-3. **INTEGRATE NATURALLY** - Weave insights into your empathetic response
-4. **PRIORITIZE RELEVANCE** - Only use information that directly helps
-5. **IGNORE IF IRRELEVANT** - If the reference doesn't match, rely on training
-
-## Persona Context Integration (WHEN PROVIDED)
-When PERSONA CONTEXT is provided:
-1. Use it to understand the person's life situation and challenges
-2. Tailor your response to their specific context
-3. Reference their challenges with empathy, not assumption
-4. DO NOT reveal that you have their profile or persona information
-5. DO NOT stereotype based on any demographic information
-6. DO NOT mention age, race, religion, or ethnicity explicitly"""
 
 # ============================================================================
 # HELPER FUNCTIONS
@@ -380,6 +321,145 @@ def persona_to_summary(persona: Dict) -> str:
     return '\n'.join(bullets)
 
 
+def extract_text_from_pdf(pdf_path: str) -> Dict[str, Any]:
+    """Extract text from a PDF file."""
+    reader = PdfReader(pdf_path)
+    text = ""
+    for page in reader.pages:
+        page_text = page.extract_text()
+        if page_text:
+            text += page_text + "\n"
+
+    return {
+        "filename": Path(pdf_path).name,
+        "filepath": str(pdf_path),
+        "num_pages": len(reader.pages),
+        "text": text,
+        "char_count": len(text),
+    }
+
+
+def chunk_text(text: str, chunk_size: int = 1000, overlap: int = 200) -> List[str]:
+    """Split text into overlapping chunks."""
+    chunks = []
+    start = 0
+    text_len = len(text)
+
+    while start < text_len:
+        end = start + chunk_size
+
+        if end < text_len:
+            for sep in ['. ', '.\n', '\n\n']:
+                last_sep = text[start:end].rfind(sep)
+                if last_sep != -1 and last_sep > chunk_size // 2:
+                    end = start + last_sep + len(sep)
+                    break
+
+        chunk = text[start:end].strip()
+        if chunk:
+            chunks.append(chunk)
+
+        start = end - overlap
+
+    return chunks
+
+
+def setup_elasticsearch_index(es, embedder, embedding_dim, index_name: str, oms_docs_path: Path):
+    """Create and populate Elasticsearch index if needed."""
+    if es.indices.exists(index=index_name):
+        count = es.count(index=index_name)['count']
+        if count > 0:
+            print(f"   ✅ Índice '{index_name}' já existe com {count} documentos")
+            return True
+
+    print(f"   🔄 Criando índice '{index_name}'...")
+
+    pdf_files = list(Path(oms_docs_path).glob("*.pdf"))
+    if not pdf_files:
+        print(f"   ❌ Nenhum PDF encontrado em {oms_docs_path}")
+        return False
+
+    documents = []
+    for pdf_file in pdf_files:
+        try:
+            doc = extract_text_from_pdf(str(pdf_file))
+            documents.append(doc)
+            print(f"      📄 {pdf_file.name}: {doc['num_pages']} páginas")
+        except Exception as e:
+            print(f"      ❌ Erro em {pdf_file.name}: {e}")
+
+    all_chunks = []
+    for doc in documents:
+        chunks = chunk_text(doc['text'], chunk_size=1000, overlap=200)
+        for i, chunk in enumerate(chunks):
+            all_chunks.append({
+                'chunk_id': f"{doc['filename']}_{i}",
+                'source': doc['filename'],
+                'chunk_index': i,
+                'text': chunk,
+                'char_count': len(chunk),
+            })
+
+    print(f"   📝 {len(all_chunks)} chunks criados")
+    print("   🔄 Gerando embeddings...")
+    texts = [chunk['text'] for chunk in all_chunks]
+    embeddings = embedder.encode(texts, show_progress_bar=True, convert_to_numpy=True)
+
+    for i, chunk in enumerate(all_chunks):
+        chunk['embedding'] = embeddings[i].tolist()
+
+    if es.indices.exists(index=index_name):
+        es.indices.delete(index=index_name)
+
+    index_mapping = {
+        "settings": {
+            "number_of_shards": 1,
+            "number_of_replicas": 0,
+            "analysis": {
+                "analyzer": {
+                    "english_analyzer": {"type": "english"}
+                }
+            }
+        },
+        "mappings": {
+            "properties": {
+                "chunk_id": {"type": "keyword"},
+                "source": {"type": "keyword"},
+                "chunk_index": {"type": "integer"},
+                "text": {
+                    "type": "text",
+                    "analyzer": "english_analyzer"
+                },
+                "embedding": {
+                    "type": "dense_vector",
+                    "dims": embedding_dim,
+                    "index": True,
+                    "similarity": "cosine"
+                }
+            }
+        }
+    }
+
+    es.indices.create(index=index_name, body=index_mapping)
+
+    print("   🔄 Indexando documentos...")
+    for chunk in tqdm(all_chunks, desc="   Indexing"):
+        doc = {
+            "chunk_id": chunk['chunk_id'],
+            "source": chunk['source'],
+            "chunk_index": chunk['chunk_index'],
+            "text": chunk['text'],
+            "embedding": chunk['embedding'],
+        }
+        es.index(index=index_name, id=chunk['chunk_id'], body=doc)
+
+    es.indices.refresh(index=index_name)
+    count = es.count(index=index_name)['count']
+    print(f"   ✅ {count} documentos indexados")
+
+    return True
+
+
 # ============================================================================
 # MAIN INFERENCE FUNCTION
 # ============================================================================
@@ -566,14 +646,19 @@ def parse_args() -> argparse.Namespace:
     init_env()
     data_dir = path_from_env("PERSONARAG_DATA_DIR", DEFAULT_DATA_DIR)
     models_dir = path_from_env("PERSONARAG_MODELS_DIR", DEFAULT_MODELS_DIR)
+    oms_docs_dir = path_from_env("PERSONARAG_OMS_DOCS_DIR", DEFAULT_OMS_DOCS_DIR)
     output_dir = path_from_env("PERSONARAG_OUTPUT_DIR", DEFAULT_OUTPUT_DIR)
+    personas_path = data_dir / "all_personas_dataset.json"
+    if not personas_path.exists():
+        personas_path = ROOT_DIR / "inference" / "all_personas_dataset.json"
 
     parser = argparse.ArgumentParser(description="Phase 3 persona-aware RAG inference")
     parser.add_argument("--dataset", type=Path, default=data_dir / "dataset_completo_com_inferencias_final.xlsx")
-    parser.add_argument("--personas", type=Path, default=data_dir / "all_personas_dataset.json")
+    parser.add_argument("--personas", type=Path, default=personas_path)
     parser.add_argument("--output", type=Path, default=output_dir / "dataset_completo_com_inferencias_final.xlsx")
-    parser.add_argument("--adapter-path", type=Path, default=models_dir / "llama-2-amive-adapter")
+    parser.add_argument("--adapter-path", type=Path, default=models_dir / "llama-2-13b-amive-esconv")
     parser.add_argument("--base-model", default="meta-llama/Llama-2-13b-chat-hf")
+    parser.add_argument("--oms-docs-dir", type=Path, default=oms_docs_dir)
     parser.add_argument("--es-host", default=os.getenv("PERSONARAG_ES_HOST", "http://localhost:9200"))
     parser.add_argument("--es-index", default=os.getenv("PERSONARAG_ES_INDEX", "oms_mental_health_docs"))
     parser.add_argument("--embedding-model", default="sentence-transformers/all-MiniLM-L6-v2")
@@ -632,75 +717,145 @@ if __name__ == "__main__":
     model.eval()
     print("   ✅ LoRA adapter loaded")
     
-    # Step 4: Setup Elasticsearch retriever
-    print("\n🔍 Setting up HybridRetriever...")
+    # Step 4: Setup Elasticsearch and populate knowledge base if needed
+    print("\n🔍 Setting up Elasticsearch knowledge base...")
     from elasticsearch import Elasticsearch
     from sentence_transformers import SentenceTransformer
     import numpy as np
-    
-    class HybridRetriever:
-        """Hybrid retriever with BM25 + Dense vectors + RRF fusion."""
-        
-        def __init__(self, 
-                     es_client,
-                     index_name: str = "oms_saude_mental_chunks",
-                     embedding_model_name: str = "sentence-transformers/all-MiniLM-L6-v2",
-                     top_k: int = 5):
-            self.es = es_client
-            self.index_name = index_name
-            self.embedding_model = SentenceTransformer(embedding_model_name)
-            self.top_k = top_k
-        
-        def retrieve(self, query: str) -> List[Dict]:
-            """Retrieve documents using hybrid search."""
-            # Get embedding
-            query_embedding = self.embedding_model.encode(query).tolist()
-            
-            # Hybrid query with RRF
-            search_body = {
-                "size": self.top_k,
-                "query": {
-                    "bool": {
-                        "should": [
-                            {"match": {"text": {"query": query, "boost": 1.0}}},
-                            {
-                                "script_score": {
-                                    "query": {"match_all": {}},
-                                    "script": {
-                                        "source": "cosineSimilarity(params.query_vector, 'embedding') + 1.0",
-                                        "params": {"query_vector": query_embedding}
-                                    }
-                                }
-                            }
-                        ]
-                    }
-                }
-            }
-            
-            try:
-                response = self.es.search(index=self.index_name, body=search_body)
-                results = []
-                for hit in response['hits']['hits']:
-                    results.append({
-                        'text': hit['_source'].get('text', ''),
-                        'score': hit['_score'],
-                        'chunk_id': hit['_id'],
-                        'source': hit['_source'].get('source', 'unknown')
-                    })
-                return results
-            except Exception as e:
-                print(f"   ⚠️ Retrieval error: {e}")
-                return []
-    
-    # Connect to Elasticsearch
+
     es = Elasticsearch([args.es_host])
     if not es.ping():
         print("   ❌ Elasticsearch not available. Please start Elasticsearch first.")
         print("   Run: sudo systemctl start elasticsearch")
         sys.exit(1)
-    
+
     print("   ✅ Connected to Elasticsearch")
+
+    embedder = SentenceTransformer(args.embedding_model)
+    embedding_dim = embedder.get_sentence_embedding_dimension()
+    print(f"   ✅ Embedding model loaded ({embedding_dim} dims)")
+
+    if not setup_elasticsearch_index(es, embedder, embedding_dim, args.es_index, args.oms_docs_dir):
+        sys.exit(1)
+
+    print("\n🔍 Setting up HybridRetriever...")
     
+    class HybridRetriever:
+        """Hybrid retriever with BM25 + Dense vectors + RRF fusion."""
+        
+        def __init__(
+            self,
+            es_client,
+            index_name: str = "oms_saude_mental_chunks",
+            embedding_model_name: str = "sentence-transformers/all-MiniLM-L6-v2",
+            top_k: int = 5,
+            candidate_pool_size: int = 50,
+            rrf_k: int = 60,
+        ):
+            self.es = es_client
+            self.index_name = index_name
+            self.embedding_model = SentenceTransformer(embedding_model_name)
+            self.top_k = top_k
+            self.candidate_pool_size = candidate_pool_size
+            self.rrf_k = rrf_k
+        
+        def retrieve(self, query: str) -> List[Dict]:
+            """Retrieve documents using BM25 + dense search fused with RRF."""
+            try:
+                query_embedding = self.embedding_model.encode(query).tolist()
+
+                bm25_body = {
+                    "size": self.candidate_pool_size,
+                    "query": {
+                        "match": {
+                            "text": {
+                                "query": query
+                            }
+                        }
+                    }
+                }
+
+                dense_body = {
+                    "size": self.candidate_pool_size,
+                    "query": {
+                        "script_score": {
+                            "query": {"match_all": {}},
+                            "script": {
+                                "source": "cosineSimilarity(params.query_vector, 'embedding') + 1.0",
+                                "params": {"query_vector": query_embedding}
+                            }
+                        }
+                    }
+                }
+
+                bm25_response = self.es.search(index=self.index_name, body=bm25_body)
+                dense_response = self.es.search(index=self.index_name, body=dense_body)
+
+                return self._fuse_with_rrf(
+                    bm25_response["hits"]["hits"],
+                    dense_response["hits"]["hits"],
+                )
+            except Exception as e:
+                print(f"   ⚠️ RRF retrieval error: {e}")
+                return []
+
+        def _fuse_with_rrf(self, bm25_hits: List[Dict], dense_hits: List[Dict]) -> List[Dict]:
+            """Fuse BM25 and dense-vector rankings using Reciprocal Rank Fusion."""
+            fused = {}
+
+            def add_hits(hits: List[Dict], source_name: str) -> None:
+                for rank, hit in enumerate(hits, start=1):
+                    chunk_id = hit["_id"]
+
+                    if chunk_id not in fused:
+                        fused[chunk_id] = {
+                            "hit": hit,
+                            "rrf_score": 0.0,
+                            "bm25_rank": None,
+                            "dense_rank": None,
+                            "bm25_score": None,
+                            "dense_score": None,
+                        }
+
+                    fused[chunk_id]["rrf_score"] += 1.0 / (self.rrf_k + rank)
+
+                    if source_name == "bm25":
+                        fused[chunk_id]["bm25_rank"] = rank
+                        fused[chunk_id]["bm25_score"] = hit.get("_score")
+                    elif source_name == "dense":
+                        fused[chunk_id]["dense_rank"] = rank
+                        fused[chunk_id]["dense_score"] = hit.get("_score")
+
+            add_hits(bm25_hits, "bm25")
+            add_hits(dense_hits, "dense")
+
+            ranked = sorted(
+                fused.items(),
+                key=lambda item: (-item[1]["rrf_score"], item[0])
+            )
+
+            results = []
+            for chunk_id, item in ranked[:self.top_k]:
+                hit = item["hit"]
+                source = hit["_source"]
+
+                results.append({
+                    "text": source.get("text", ""),
+                    "score": item["rrf_score"],
+                    "rrf_score": item["rrf_score"],
+                    "chunk_id": chunk_id,
+                    "source": source.get("source", "unknown"),
+                    "chunk_index": source.get("chunk_index"),
+                    "bm25_rank": item["bm25_rank"],
+                    "dense_rank": item["dense_rank"],
+                    "bm25_score": item["bm25_score"],
+                    "dense_score": item["dense_score"],
+                    "retrieval_method": "rrf",
+                })
+
+            return results
+    
+    # Connect to Elasticsearch
     retriever = HybridRetriever(
         es_client=es,
         index_name=args.es_index,
@@ -723,7 +878,7 @@ if __name__ == "__main__":
         use_persona_in_retrieval=True,
         use_persona_in_prompt=True,
         max_new_tokens=args.max_new_tokens,
-        output_column='inferencia_persona_final'
+        output_column='resposta_phase3'
     )
     
     # Step 6: Save results

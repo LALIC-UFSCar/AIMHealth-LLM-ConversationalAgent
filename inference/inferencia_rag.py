@@ -75,58 +75,109 @@ def parse_args() -> argparse.Namespace:
 class HybridRetriever:
     """Hybrid retriever: BM25 + Dense + RRF fusion."""
     
-    def __init__(self, es_client, index_name, embedder, k=5, rrf_k=60):
+    def __init__(self, es_client, index_name, embedder, k=5, candidate_pool_size=50, rrf_k=60):
         self.es = es_client
         self.index_name = index_name
         self.embedder = embedder
         self.k = k
+        self.candidate_pool_size = candidate_pool_size
         self.rrf_k = rrf_k
     
-    def _bm25_search(self, query: str, k: int) -> List[Dict]:
-        """BM25 lexical search."""
-        response = self.es.search(
-            index=self.index_name,
-            body={"query": {"match": {"text": {"query": query, "operator": "or"}}}, "size": k}
-        )
-        return response['hits']['hits']
-    
-    def _dense_search(self, query: str, k: int) -> List[Dict]:
-        """Dense vector semantic search."""
-        query_embedding = self.embedder.encode(query).tolist()
-        response = self.es.search(
-            index=self.index_name,
-            body={"knn": {"field": "embedding", "query_vector": query_embedding, "k": k, "num_candidates": k * 2}}
-        )
-        return response['hits']['hits']
-    
-    def _rrf_fusion(self, bm25_results: List, dense_results: List) -> List[Dict]:
-        """Reciprocal Rank Fusion."""
-        scores, docs = {}, {}
-        
-        for rank, hit in enumerate(bm25_results):
-            doc_id = hit['_id']
-            scores[doc_id] = scores.get(doc_id, 0) + 1.0 / (self.rrf_k + rank + 1)
-            docs[doc_id] = hit['_source']
-        
-        for rank, hit in enumerate(dense_results):
-            doc_id = hit['_id']
-            scores[doc_id] = scores.get(doc_id, 0) + 1.0 / (self.rrf_k + rank + 1)
-            docs[doc_id] = hit['_source']
-        
-        sorted_docs = sorted(scores.items(), key=lambda x: x[1], reverse=True)
-        
-        results = []
-        for doc_id, score in sorted_docs[:self.k]:
-            doc = docs[doc_id]
-            doc['rrf_score'] = score
-            results.append(doc)
-        return results
-    
     def retrieve(self, query: str) -> List[Dict]:
-        """Hybrid retrieval."""
-        bm25 = self._bm25_search(query, self.k * 2)
-        dense = self._dense_search(query, self.k * 2)
-        return self._rrf_fusion(bm25, dense)
+        """Retrieve documents using BM25 + dense search fused with RRF."""
+        try:
+            query_embedding = self.embedder.encode(query).tolist()
+
+            bm25_body = {
+                "size": self.candidate_pool_size,
+                "query": {
+                    "match": {
+                        "text": {
+                            "query": query
+                        }
+                    }
+                }
+            }
+
+            dense_body = {
+                "size": self.candidate_pool_size,
+                "query": {
+                    "script_score": {
+                        "query": {"match_all": {}},
+                        "script": {
+                            "source": "cosineSimilarity(params.query_vector, 'embedding') + 1.0",
+                            "params": {"query_vector": query_embedding}
+                        }
+                    }
+                }
+            }
+
+            bm25_response = self.es.search(index=self.index_name, body=bm25_body)
+            dense_response = self.es.search(index=self.index_name, body=dense_body)
+
+            return self._fuse_with_rrf(
+                bm25_response["hits"]["hits"],
+                dense_response["hits"]["hits"],
+            )
+        except Exception as e:
+            print(f"   ⚠️ RRF retrieval error: {e}")
+            return []
+
+    def _fuse_with_rrf(self, bm25_hits: List[Dict], dense_hits: List[Dict]) -> List[Dict]:
+        """Fuse BM25 and dense-vector rankings using Reciprocal Rank Fusion."""
+        fused = {}
+
+        def add_hits(hits: List[Dict], source_name: str) -> None:
+            for rank, hit in enumerate(hits, start=1):
+                chunk_id = hit["_id"]
+
+                if chunk_id not in fused:
+                    fused[chunk_id] = {
+                        "hit": hit,
+                        "rrf_score": 0.0,
+                        "bm25_rank": None,
+                        "dense_rank": None,
+                        "bm25_score": None,
+                        "dense_score": None,
+                    }
+
+                fused[chunk_id]["rrf_score"] += 1.0 / (self.rrf_k + rank)
+
+                if source_name == "bm25":
+                    fused[chunk_id]["bm25_rank"] = rank
+                    fused[chunk_id]["bm25_score"] = hit.get("_score")
+                elif source_name == "dense":
+                    fused[chunk_id]["dense_rank"] = rank
+                    fused[chunk_id]["dense_score"] = hit.get("_score")
+
+        add_hits(bm25_hits, "bm25")
+        add_hits(dense_hits, "dense")
+
+        ranked = sorted(
+            fused.items(),
+            key=lambda item: (-item[1]["rrf_score"], item[0])
+        )
+
+        results = []
+        for chunk_id, item in ranked[:self.k]:
+            hit = item["hit"]
+            source = hit["_source"]
+
+            results.append({
+                "text": source.get("text", ""),
+                "score": item["rrf_score"],
+                "rrf_score": item["rrf_score"],
+                "chunk_id": chunk_id,
+                "source": source.get("source", "unknown"),
+                "chunk_index": source.get("chunk_index"),
+                "bm25_rank": item["bm25_rank"],
+                "dense_rank": item["dense_rank"],
+                "bm25_score": item["bm25_score"],
+                "dense_score": item["dense_score"],
+                "retrieval_method": "rrf",
+            })
+
+        return results
 
 
 def extract_text_from_pdf(pdf_path: str) -> Dict[str, Any]:
