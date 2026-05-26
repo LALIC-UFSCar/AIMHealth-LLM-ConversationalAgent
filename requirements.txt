@@ -1,15 +1,21 @@
 pandas>=2.0.0
-torch>=2.1.0
-transformers>=4.40.0
-peft>=0.11.0
 tqdm>=4.66.0
+langchain>=0.2.0
+langchain-core>=0.2.0
+langchain-groq>=0.1.6
 sentence-transformers>=2.6.0
-elasticsearch>=8.12.0
+elasticsearch>=8.12.0,<9.0.0
 pypdf>=4.2.0
-openai>=1.30.0
+streamlit>=1.35.0
 python-dotenv>=1.0.1
+openai>=1.30.0
 openpyxl>=3.1.0
 datasets>=2.19.0
 trl>=0.9.0
 accelerate>=0.30.0
+# Legacy local training and batch inference scripts still use these packages.
+# The Streamlit Groq chatbot does not load local LLM weights with them.
+torch>=2.1.0,<2.7.0
+transformers>=4.40.0
+peft>=0.11.0
 bitsandbytes>=0.43.0

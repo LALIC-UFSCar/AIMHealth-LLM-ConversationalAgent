@@ -70,9 +70,9 @@ def detect_crisis_risk(text: str) -> Dict[str, object]:
 def build_crisis_response_988() -> str:
     """Return a fixed empathetic crisis response with 988 resource."""
     return (
-        "I hear you, and I am really glad you reached out. "
-        "You do not have to go through this alone. "
-        "Please contact the 988 Suicide & Crisis Lifeline right now. "
-        "You can call or text 988, 24 hours a day, 7 days a week. "
-        "They are trained to support you with care and confidentiality."
+        "Your message suggests intense emotional pain, and this is an important moment to seek immediate support. "
+        "You do not need to face this alone. "
+        "Please contact the 988 Suicide & Crisis Lifeline now. "
+        "Call or text 988, available 24 hours a day, 7 days a week. "
+        "This service is confidential and staffed by trained crisis counselors."
     )
